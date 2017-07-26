@@ -1,0 +1,170 @@
+@{
+    ViewData["Title"] = "Find Similar";
+}
+
+<div class="row">
+    <h2>Find Similar</h2>
+    <div class="col-md-12">
+        <form class="form-horizontal" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-md-10 form-group">
+                    <label for="file" class="btn btn-info">Select Target Image </label>
+                    <input type="file" style="visibility:hidden;" id="file" onchange="readURL(this , 1);" />
+                    <img id="image" src="#" style="display: none; max-width:300px;max-height:300px" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<br />
+
+<div class="row">
+    <div class="col-md-12">
+        <form class="form-horizontal" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-md-10 form-group multiple-image">
+                    <label for="files" class="btn btn-info">Select Candidate Images</label>
+                    <input type="file" style="visibility:hidden;" id="files" multiple onchange="readURL(this, 2);" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<br />
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group">
+            <label>Find Match by: </label>
+            <select class="form-control" id="mode">
+                <option value="matchPerson">Person</option>
+                <option value="matchFace">Face</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group">
+            <input type="submit" disabled id="find" class="btn btn-primary" value="Find Now" />
+        </div>
+    </div>
+</div>
+<div class="row" id="result">
+</div>
+<input type="hidden" id="faceId" />
+@section Scripts
+{
+    <script>
+        function readURL(input, numOfFile) {
+            var files = input.files;
+            if (!files)
+                alert("Please select image!");
+            else if (numOfFile == 1) {
+                if (files.length != 1)
+                    alert("Please upload exactly 1 image!");
+                else {
+                    $('#image').show();
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#image').attr('src', e.target.result);
+                    };
+                    reader.readAsDataURL(files[0]);
+
+                    var formData = new FormData();
+                    formData.append(files[0].name, files[0]);
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Detect/Upload",
+                        contentType: false,
+                        processData: false,
+                        data: formData,
+                        success: function (response) {
+                            if (response.success) {
+                                if (response.data.length != 1)
+                                    alert("Image must be contains only one face!")
+                                else
+                                    $("#faceId").val(response.data[0].faceId);
+                            } else {
+                                alert(response.error);
+                            }
+                        },
+                        error: function () {
+                            alert("Server Internal Error");
+                        }
+                    });
+                }
+            }
+            else if (input.files.length < 2) {
+                $(':input[type="submit"]').prop('disabled', true);
+                alert("Please upload at least 2 images!");
+            } else {
+                $(':input[type="submit"]').prop('disabled', false);
+                $('.multiple-image img').remove();
+                $.each(input.files, function (index, file) {
+                    $(input).after(function () {
+                        return "<img id='image" + index + "' src='#' style='max-width:300px; max-height:300px' />";
+                    });
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#image' + index).attr('src', e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+
+        function cleanHtml() {
+            $("#result").empty();
+        }
+
+        function bindHtml(data) {
+            var html = "<h2>Find Similar Result</h2>";
+            if (data.length > 0) {
+                html += "<table class='table table-bordered'>" +
+                    "<thead><tr><th>Face Id</th><th>Confidence</th><th>Images</th></tr></thead>" +
+                    "<tbody>";
+                $.each(data, function (index, item) {
+                    html += "<tr><td>" + item.faceId + "</td><td>" + item.confidence + "</td><td>" + drawImage(900, item.imageName + (index + 1)) + "</td></tr>";
+                });
+                html += "</tbody></table><br/>";
+            }
+            else {
+                html += "No result found!";
+            }
+            $("#result").prepend(html);
+        }
+
+        $("#find").click(function (e) {
+            var formData = new FormData();
+            var files = $("#files")[0].files;
+            $.each(files, function (index, file) {
+                formData.append(file.name, file);
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "/Face/FindSimilar?mode=" + $("#mode").val() + "&faceId=" + $("#faceId").val(),
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function (response) {
+                    if (response.success) {
+                        cleanHtml();
+                        bindHtml(response.data);
+                        bindImage("#files", response.data, 900);
+
+                    } else {
+                        alert(response.error);
+                    }
+                },
+                error: function () {
+                    alert("Server Internal Error");
+                }
+            });
+        });
+    </script>
+}
+

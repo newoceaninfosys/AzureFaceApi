@@ -1,0 +1,176 @@
+﻿@model Face.Mvc.Models.Group.GroupListViewModel
+@{
+    ViewData["Title"] = "Face Detect";
+}
+
+<h2>Face Detect</h2>
+<p style="font-style: italic">
+    Face API detects up to 64 human faces with high precision face location in an image. And the image can be specified by file in bytes or valid URL.
+</p>
+<p>
+    <img style="height: 200px;" src="https://docs.microsoft.com/en-us/azure/cognitive-services/face/images/face.detection.jpg" alt="Overview - Face Detection" data-linktype="relative-path">
+</p>
+<p style="font-style: italic">
+    Face rectangle (left, top, width and height) indicating the face location in the image is returned along with each detected face. Optionally, face detection extracts a series of face related attributes such as pose, gender, age, head pose, facial hair and glasses.
+</p>
+<p style="font-style: italic">
+    Detect human faces in an image and returns face locations, and optionally with faceIds, landmarks, and attributes.
+    <ul style="font-style: italic">
+        <li>Optional parameters for returning faceId, landmarks, and attributes. Attributes include age, gender, smile intensity, facial hair, head pose, glasses, emotion, hair, makeup, occlusion, accessories, blur, exposure and noise.</li>
+        <li>JPEG, PNG, GIF(the first frame), and BMP are supported. The image file size should be larger than or equal to 1KB but no larger than 4MB.</li>
+        <li>The detectable face size is between 36x36 to 4096x4096 pixels. The faces out of this range will not be detected.</li>
+        <li>A maximum of 64 faces could be returned for an image. The returned faces are ranked by face rectangle size in descending order.</li>
+        <li>Some faces may not be detected for technical challenges, e.g. very large face angles (head-pose) or large occlusion. Frontal and near-frontal faces have the best results.</li>
+        <li>Attributes (age, gender, headPose, smile, facialHair, glasses, emotion, hair, makeup, occlusion, accessories, blur, exposure and noise) are still experimental and may not be very accurate. HeadPose's pitch value is a reserved field and will always return 0.</li>
+    </ul>
+</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-12 form-group">
+        <form class="form-horizontal" method="post" enctype="multipart/form-data">
+            <input type="file" id="files" name="files" style="display:none" />
+            <img id="blah" style="cursor: pointer; max-height: 200px; max-width: 500px;" src="https://blog.stylingandroid.com/wp-content/themes/lontano-pro/images/no-image-slide.png" alt="preview image" />
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 form-group">
+        <button type="button" id="upload" class="btn btn-primary">Detect</button>
+    </div>
+</div>
+
+<div id="result-data" style="display: none">
+    <h4>Detect Result</h4>
+    <div id="detectResult"></div>
+</div>
+
+@section Scripts
+{
+    <script>
+
+        $(document).ready(function () {
+
+            function readURL(input) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#blah').attr('src', e.target.result);
+                    }
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+
+            $("#blah").click(function () {
+                $("#files").click();
+            });
+
+            $("#files").change(function () {
+                readURL(this);
+            });
+
+            $("#upload").click(function (evt) {
+                var fileUpload = $("#files").get(0);
+                var files = fileUpload.files;
+                var data = new FormData();
+                for (var i = 0; i < files.length; i++) {
+                    data.append(files[i].name, files[i]);
+                }
+                $.ajax({
+                    type: "POST",
+                    url: "/Detect/Upload",
+                    contentType: false,
+                    processData: false,
+                    data: data,
+                    success: function (data) {
+                        if (data.success) {
+                            renderResource(data.data, data.image);
+                            bindImage("#files", data.data, 400);
+
+                        } else {
+                            alert(data.error);
+                        }
+                    },
+                    error: function () {
+                        alert("There was error uploading files!");
+                    }
+                });
+            });
+
+            function renderResource(data, image) {
+                var results = '';
+                results += '<table class="table table-bordered">' +
+                    '<thead><tr><th>Face</th><th style="width:150px;">Basic Info</th><th>Full Info</th></tr></thead><tbody>';
+                data.forEach(function myfunction(face, index) {
+                    //results += '<code style="white-space: pre;">' + JSON.stringify(face, '', 3) + '</code>';
+                    results += '<tr><td>' + drawImage(400, image.imageName + (index + 1)) + '</td><td>Gender: ' + face.faceAttributes.gender + '<br/>Age: ' + (parseInt(face.faceAttributes.age) + 6) + '</td><td>' + JSON.stringify(face) + '</td></tr>';
+
+                    //results += ''
+                    //    + '<div class="row" ><div class="col-md-6"><div class="row"><div class="col-md-4 form-group"><label for="usr">faceId:</label></div><div class="col-md-8"><p> ' + face.faceId + '</p></div></div></div></div >'
+                    //    + '<div class="row"> <div class="col-md-6"> <h5>Base info</h5> <div class="row"> <div class="col-md-4 form-group"> <label for="usr">age:</label> </div><div class="col-md-8"> <p> ' + face.faceAttributes.age + '</p></div></div><div class="row">'
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">gender:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.gender + '</p></div></div><div class="row">'
+                    //    + '<div class="col-md-4 form-group" > <label for="usr">smile:</label> </div > <div class="col-md-8"> <p>' + face.faceAttributes.smile + '</p></div></div > <div class="row">'
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">glasses:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.glasses + '</p></div></div></div > <div class="col-md-6">'
+                    //    + '<h5>A rectangle area for the face location on image</h5> <div class="row"> <div class="col-md-4 form-group">'
+                    //    + '<label for="usr">width:</label> </div><div class="col-md-8"> <p>' + face.faceRectangle.width + '</p></div></div><div class="row"> <div class="col-md-4 form-group"> '
+                    //    + '<label for="usr">height:</label> </div><div class="col-md-8"> <p>' + face.faceRectangle.height + '</p></div></div><div class="row"> <div class="col-md-4 form-group"> '
+                    //    + '<label for="usr">left:</label> </div><div class="col-md-8"> <p>' + face.faceRectangle.left + '</p></div></div><div class="row"> <div class="col-md-4 form-group"> '
+                    //    + '<label for="usr">top:</label> </div><div class="col-md-8"> <p>' + face.faceRectangle.top + '</p></div></div></div></div > '
+                    //    + '<div class="row"> <div class="col-md-6"> <h5>emotion</h5> <div class="row"> <div class="col-md-4 form-group"> '
+                    //    + '<label for="usr">anger:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.anger + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">contempt:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.contempt + '</p></div></div><div class="row"> '
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">disgust:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.disgust + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">fear:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.fear + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">happiness:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.happiness + '</p></div></div><div class="row">'
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">neutral:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.neutral + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">sadness:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.sadness + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">surprise:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.emotion.surprise + '</p></div></div></div><div class="col-md-6">'
+                    //    + ' <h5>occlusion</h5> <div class="row"> <div class="col-md-4 form-group">'
+                    //    + ' <label for="usr">foreheadOccluded:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.occlusion.foreheadOccluded + '</p></div></div><div class="row">'
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">eyeOccluded:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.occlusion.eyeOccluded + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">mouthOccluded:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.occlusion.mouthOccluded + '</p></div></div></div></div>'
+                    //    + '<div class="row"> <div class="col-md-6"> <h5>facialHair</h5> <div class="row"> <div class="col-md-4 form-group">'
+                    //    + ' <label for="usr">moustache:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.facialHair.moustache + '</p></div></div><div class="row">'
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">beard:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.facialHair.beard + '</p></div></div><div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">sideburns:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.facialHair.sideburns + '</p></div></div></div> '
+                    //    + '<div class="col-md-6"> <h5>headPose</h5> <div class="row"> <div class="col-md-4 form-group"> <label for="usr">roll:</label>'
+                    //    + ' </div><div class="col-md-8"> <p>' + face.faceAttributes.headPose.roll + '</p></div></div><div class="row"> <div class="col-md-4 form-group"> <label for="usr">yaw:</label> '
+                    //    + '</div><div class="col-md-8"> <p>' + face.faceAttributes.headPose.yaw + '</p></div></div><div class="row"> <div class="col-md-4 form-group"> '
+                    //    + '<label for="usr">pitch:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.headPose.pitch + '</p></div></div></div></div>'
+                    //    + '<div class="row"> <div class="col-md-6"> <h5>makeup</h5> <div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">eyeMakeup:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.makeup.eyeMakeup + '</p></div></div><div class="row"> '
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">lipMakeup:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.makeup.lipMakeup + '</p></div></div></div> '
+                    //    + '<div class="col-md-6"> <h5>blur</h5> <div class="row"> <div class="col-md-4 form-group"> <label for="usr">blurLevel:</label> '
+                    //    + '</div><div class="col-md-8"> <p> ' + face.faceAttributes.blur.blurLevel + '</p></div></div><div class="row"> <div class="col-md-4 form-group"> '
+                    //    + '<label for="usr">value:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.blur.value + '</p></div></div></div></div>'
+                    //    + '<div class="row"> <div class="col-md-6"> <h5>exposure</h5> <div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">exposureLevel:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.exposure.exposureLevel + '</p></div></div><div class="row"> '
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">value:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.exposure.value + '</p></div> '
+                    //    + '</div></div><div class="col-md-6"> <h5>noise</h5> <div class="row"> '
+                    //    + '<div class="col-md-4 form-group"> <label for="usr">noiseLevel:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.noise.noiseLevel + '</p></div></div><div class="row">'
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">value:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.noise.value + '</p></div></div></div></div>'
+                    //    + '<div class="row"> <div class="col-md-6"> <h5>accessories</h5> <div class="row"> <div class="col-md-4 form-group"> <label for="usr">type</label> </div><div class="col-md-8"> <label for="usr">confidence</label> </div></div><div class="row">';
+
+                    //face.faceAttributes.accessories.forEach(function myfunction(accessory) {
+                    //    results += ' <div class="col-md-4 form-group"> <p>' + accessory.type + '</p></div><div class="col-md-8"> <p>' + accessory.confidence + '</p></div>';
+                    //});
+                    //results += '</div ></div > <div class="col-md-6"> <h5>hair</h5> <div class="row">' +
+                    //    ' <div class="col-md-4 form-group"> <label for="usr">bald:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.hair.bald + '</p></div></div><div class="row"> '
+                    //    + ' <div class="col-md-4 form-group"> <label for="usr">invisible:</label> </div><div class="col-md-8"> <p>' + face.faceAttributes.hair.invisible + '</p></div></div>'
+                    //    + ' <div class="row"> <div class="col-md-4 form-group"> <label for="usr">hairColor</label> </div><div class="col-md-8"> <label for="usr">confidence</label> </div></div>';
+
+                    //face.faceAttributes.hair.hairColor.forEach(function myfunction(hair) {
+                    //    results += '<div class="row" > <div class="col-md-4 form-group">  <p>' + hair.color + '</p> </div> <div class="col-md-8"> <p>' + hair.confidence + '</p></div></div >';
+                    //});
+
+                    //results += '</div >';
+                });
+
+                results += '</tbody></table>';
+                $("#detectResult").html(results);
+                $("#result-data").show();
+            }
+        });
+
+    </script>
+}

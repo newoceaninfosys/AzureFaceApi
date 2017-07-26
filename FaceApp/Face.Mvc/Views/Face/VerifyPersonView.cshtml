@@ -1,0 +1,154 @@
+@model Face.Mvc.Models.Face.FaceVerifyPersonViewModel
+@{
+    ViewData["Title"] = "Verify Person";
+}
+
+<br />
+<h2>Person Info</h2>
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>Person Id</label>
+            </div>
+            <div class="col-md-10">
+                <label id="personId">: @Model.PersonId</label>
+            </div>
+        </div>
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>Person Name</label>
+            </div>
+            <div class="col-md-10">
+                <label>: @Model.Name</label>
+            </div>
+        </div>
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>User data</label>
+            </div>
+            <div class="col-md-10">
+                <label>: @Model.UserData</label>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<br />
+
+<table class="table table-bordered" id="result-table">
+    <tbody>
+        <tr>
+            <td>
+                @foreach (var face in Model.FaceUrls)
+                {
+                    <img src="@face" style="max-width:200px;max-height:200px" />
+                }
+            </td>
+        </tr>
+    </tbody>
+</table>
+<br />
+<br /> ------------------------------------------------------------------------------------------------------------------------------
+<br />
+<br />
+<h2>Verify - Face to Person</h2>
+<p style="font-style: italic">
+    Face API verification performs an authentication from one detected face to one person object.
+</p>
+<p style="font-style: italic">
+    Remarks:
+    <ul>
+        <li>This API works well for frontal and near-frontal faces.</li>
+        <li>Please upload exactly <b>ONE</b> image.</li>
+        <li>Image must contain only <b>ONE</b> face.</li>
+    </ul>
+</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-12">
+        <form class="form-horizontal" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-md-10 form-group">
+                    @*<p>Upload file(s):</p>*@
+                    <input type="file" id="files"
+                           name="files" />
+                </div>
+                <div class="col-md-10 form-group">
+                    <input type="button" id="upload" class="btn btn-primary" value="Verify Now" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<br />
+
+<div class="row" id="result-data" style="display: none">
+    <h2>Verify Result</h2>
+    <div class="col-md-12">
+        <div class="row">
+            <div class="form-group ">
+                <div class="col-md-2">
+                    <label>Is Identical</label>
+                </div>
+                <div class="col-md-10">
+                    :
+                    <label id="isIdentical"></label>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group ">
+                <div class="col-md-2">
+                    <label>Confidence</label>
+                </div>
+                <div class="col-md-10">
+                    :
+                    <label id="confidence"></label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        $(document).ready(function () {
+
+            function bindHtml(data) {
+                $("#isIdentical").text(data.isIdentical);
+                $("#confidence").text(data.confidence);
+                $("#result-data").show();
+            }
+
+            $("#upload").click(function (evt) {
+                var formData = new FormData();
+                   formData.append('image', $("#files")[0].files[0]);
+            formData.append('personGroupId', '@Model.PersonGroupId');
+            formData.append('personId', '@Model.PersonId');
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Face/VerifyFaceToPerson",
+                    contentType: false,
+                    processData: false,
+                    data: formData,
+                    success: function (response) {
+                        if (response.success) {
+                            bindHtml(response.data);
+                        } else {
+                            alert(response.error);
+                        }
+                    },
+                    error: function () {
+                        alert(response.error);
+                    }
+                });
+            });
+        });
+
+    </script>
+}

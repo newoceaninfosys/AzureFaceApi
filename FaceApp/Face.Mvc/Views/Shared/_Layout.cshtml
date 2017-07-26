@@ -1,0 +1,135 @@
+﻿@inject Microsoft.ApplicationInsights.AspNetCore.JavaScriptSnippet JavaScriptSnippet
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Face.Mvc</title>
+
+    <environment names="Development">
+        <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+        <link rel="stylesheet" href="~/css/site.css" />
+    </environment>
+    <environment names="Staging,Production">
+        <link rel="stylesheet" href="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/css/bootstrap.min.css"
+              asp-fallback-href="~/lib/bootstrap/dist/css/bootstrap.min.css"
+              asp-fallback-test-class="sr-only" asp-fallback-test-property="position" asp-fallback-test-value="absolute" />
+        <link rel="stylesheet" href="~/css/site.min.css" asp-append-version="true" />
+    </environment>
+    @Html.Raw(JavaScriptSnippet.FullScript)
+</head>
+<body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+
+        <div class="container">
+            <div class="navbar-header">
+                <a asp-area="" asp-controller="Home" asp-action="Index" class="navbar-brand">Face System</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    @*<li><a asp-area="" asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li><a asp-area="" asp-controller="Home" asp-action="About">About</a></li>
+                        <li><a asp-area="" asp-controller="Home" asp-action="Contact">Contact</a></li>*@
+                    <li><a asp-area="" asp-controller="Group" asp-action="Index">Group</a></li>
+                    <li><a asp-area="" asp-controller="Person" asp-action="Index">Person</a></li>
+                    <li><a asp-area="" asp-controller="Detect" asp-action="Index">Face Detect</a></li>
+                    <li><a asp-area="" asp-controller="Identify" asp-action="Index">Face Identify</a></li>
+                    <li><a asp-area="" asp-controller="Face" asp-action="GroupView">Face Group</a></li>
+                    <li><a asp-area="" asp-controller="Face" asp-action="VerifyView">Face Verify</a></li>
+                    <li><a asp-area="" asp-controller="Face" asp-action="FindSimilar">Find Similar</a></li>
+                </ul>
+                @*@await Html.PartialAsync("_LoginPartial")*@
+            </div>
+        </div>
+    </nav>
+    <div class="container body-content">
+        @RenderBody()
+        <hr />
+        <footer>
+            <img src="~/images/newocean-logo.png" />
+            <p>&copy; 2017 - NewOcean Infosystem</p>
+        </footer>
+    </div>
+
+    <environment names="Development">
+        <script src="~/lib/jquery/dist/jquery.js"></script>
+        <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
+        <script src="~/js/site.js" asp-append-version="true"></script>
+    </environment>
+    <environment names="Staging,Production">
+        <script src="https://ajax.aspnetcdn.com/ajax/jquery/jquery-2.2.0.min.js"
+                asp-fallback-src="~/lib/jquery/dist/jquery.min.js"
+                asp-fallback-test="window.jQuery"
+                crossorigin="anonymous"
+                integrity="sha384-K+ctZQ+LL8q6tP7I94W+qzQsfRV2a+AfHIi9k8z8l9ggpc8X+Ytst4yBo/hH+8Fk">
+        </script>
+        <script src="https://ajax.aspnetcdn.com/ajax/bootstrap/3.3.7/bootstrap.min.js"
+                asp-fallback-src="~/lib/bootstrap/dist/js/bootstrap.min.js"
+                asp-fallback-test="window.jQuery && window.jQuery.fn && window.jQuery.fn.modal"
+                crossorigin="anonymous"
+                integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa">
+        </script>
+        <script src="~/js/site.min.js" asp-append-version="true"></script>
+    </environment>
+
+    @RenderSection("Scripts", required: false)
+
+    <div id="loading-image" style="display: none;position: fixed;top: 0;left: 0;height: 100%;width: 100%;z-index: 9999;background: rgba(255, 255, 255, 0.5);padding-left: 40%;padding-top: 10%;"><img src="http://www.villacarlotta.it/images/loading.gif" /></div>
+    <script>
+        $(document).on({
+            ajaxStart: function () { $("#loading-image").show(); },
+            ajaxStop: function () { $("#loading-image").hide(); }
+        });
+
+
+        function drawImage(maxWidth, className) {
+            return "<img style='max-width:" + maxWidth + "px' class='" + className + "' src='#' />";
+        }
+
+        function bindImage(selectorInput, data, maxWidth) {
+            var files = $(selectorInput)[0].files;
+            $.each(data, function (index, item) {
+                var selector = item.selector || "img." + item.imageName + (index + 1);
+                var file = $.map(files, function (file) {
+                    if (file.name == item.imageFullName)
+                        return file;
+                })[0];
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $(selector).attr('src', e.target.result);
+                };
+                reader.onloadend = function (e) {
+                    if (index == data.length - 1)
+                        drawSquare(data, maxWidth);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function drawSquare(data, maxWidth) {
+            $.each(data, function (index, item) {
+                var selector = item.selector || "img." + item.imageName + (index + 1);
+
+                var offset = $(selector).offset();
+                if (offset !== undefined) {
+                    var top = offset.top;
+                    var left = offset.left;
+                    var width = item.position.width;
+                    var height = item.position.height;
+                    if (item.width > maxWidth) {
+                        var scale = maxWidth / item.width;
+                        top += item.position.top * scale;
+                        left += item.position.left * scale;
+                        width = width * scale;
+                        height = height * scale;
+                    } else {
+                        top += item.position.top;
+                        left += item.position.left;
+                    }
+                    $(selector).parent().prepend("<div style='border: 2px solid red; top:" + top + "px; left:" + left + "px; width: " + width + "px; height: " + width + "px; position: absolute;'></div>");
+                }
+            });
+        }
+    </script>
+</body>
+</html>

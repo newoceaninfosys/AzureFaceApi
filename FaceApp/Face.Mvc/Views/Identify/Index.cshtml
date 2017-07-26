@@ -1,0 +1,150 @@
+﻿@model Face.Mvc.Models.Face.IdentifyModel
+@{
+    ViewData["Title"] = "Face Identify";
+}
+
+<h2>Face Identify</h2>
+<p style="font-style: italic">
+    Face API can be used to identify people based on a detected face and people database (defined as a person group) which needs to be created in advance and can be edited over time.
+</p>
+<p style="font-style: italic">
+    The following figure is an example of a person group named "myfriends". Each group may contain up to 1,000 person objects. Meanwhile, each person object can have one or more faces registered.
+</p>
+<p>
+    <img style="height: 300px" src="https://docs.microsoft.com/en-us/azure/cognitive-services/face/images/person.group.clare.jpg"/>
+</p>
+<p style="font-style: italic">
+    After a person group has been created and trained, identification can be performed against the group and a new detected face. If the face is identified as a person object in the group, the person object will be returned.
+</p>
+<p style="font-style: italic">
+    Identify unknown faces from a person group.
+</p>
+<p style="font-style: italic">
+    For each face in the faceIds array, Face Identify will compute similarities between the query face and all the faces in the person group (given by personGroupId), and returns candidate person(s) for that face ranked by similarity confidence. The person group should be trained to make it ready for identification
+</p>
+<p style="font-style: italic">
+    Remarks:
+    <ul style="font-style: italic">
+        <li>The algorithm allows more than one face to be identified independently at the same request, but the no more than 10 faces.</li>
+        <li>Each person in the person group could have more than one face, but no more than 248 faces.</li>
+        <li>Identification works well for frontal faces and near-frontal faces.</li>
+        <li>Number of candidates returned is restricted by maxNumOfCandidatesReturned and confidenceThreshold. If no person is identified, the candidate returned will be an empty array.</li>
+    </ul>
+</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-12 form-group">
+        <form class="form-horizontal" method="post" enctype="multipart/form-data">
+            <input type="file" id="files" name="files" style="display:none" />
+            <img id="blah" style="cursor:pointer" src="https://blog.stylingandroid.com/wp-content/themes/lontano-pro/images/no-image-slide.png" alt="preview image" height="200" width="200" />
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 form-group">
+        @*<label class="col-md-1 control-label">Group</label>
+        <div class="col-md-11">
+            <select id="groupSelect" class="form-control" asp-items="@(new SelectList(Model.Groups,"Id","Name"))"></select>
+        </div>*@
+        <select id="groupSelect" class="form-control" asp-items="@(new SelectList(Model.Groups,"Id","Name"))"></select>
+        </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 form-group">
+        <button type="button" id="identify" class="btn btn-primary">Identify</button>
+    </div>
+</div>
+
+<div id="result-data" style="display: none">
+    <h4>Identify Result</h4>
+    <div id="result"></div>
+</div>
+
+@section Scripts
+{
+    <script>
+
+        $(document).ready(function () {
+
+            function readURL(input) {
+
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        $('#blah').attr('src', e.target.result);
+                    }
+
+                    reader.readAsDataURL(input.files[0]);
+                }
+            }
+
+            $("#blah").click(function () {
+                $("#files").click();
+            });
+
+            $("#files").change(function () {
+                readURL(this);
+            });
+
+            $("#identify").click(function (evt) {
+                var fileUpload = $("#files").get(0);
+                var files = fileUpload.files;
+                var data = new FormData();
+                for (var i = 0; i < files.length; i++) {
+                    data.append(files[i].name, files[i]);
+                }
+
+                data.append('personGroupId', $("#groupSelect").val());
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Identify/Identify",
+                    contentType: false,
+                    processData: false,
+                    data: data,
+                    success: function (data) {
+                        if (data.success) {
+                            console.log(data.data);
+                            renderResource(data.data);
+                        } else {
+                            alert(data.error);
+                        }
+                    },
+                    error: function () {
+                        alert("There was error uploading files!");
+                    }
+                });
+            });
+
+            function renderResource(data) {
+                var results = '';
+
+                data.forEach(function myfunction(face) {
+                    if (face.persons.length == 0) {
+                        results += '<p> no face in this group compatible with face id #' + face.faceId + '</p>'
+                    } else {
+                        results += '<div class="row"> <div class="col-md-12"> <div class="row"> <div class="col-md-2 form-group"> <label for="usr">faceId:</label> </div><div class="col-md-8"> <p> ' + face.faceId + ' </p></div></div></div></div>'
+                            + '<div class="row" >';
+
+                        face.persons.forEach(function myfunction(person) {
+                            results += '<div class="col-md-4">'
+                                + '<div class="row"> <div class="col-md-4 form-group"> <label for="usr">name:</label> </div><div class="col-md-8"> <p> ' + person.name + ' </p></div></div>'
+                                + '<div class="row"> <div class="col-md-4 form-group"> <label for="usr">Confidence:</label> </div><div class="col-md-8"> <p> ' + person.confidence + ' </p></div></div>'
+                                + '<div class="row"> <div class="col-md-12"> <img src="' + person.url + '" alt="' + person.name + '" width="200" height="200"> </div></div>'
+                                + '</div >';
+                        });
+
+                        results += '</div >';
+                    }
+                });
+
+                $("#result").html(results);
+                $("#result-data").show();
+            }
+        });
+
+    </script>
+}

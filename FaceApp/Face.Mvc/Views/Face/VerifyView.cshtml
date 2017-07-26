@@ -1,0 +1,106 @@
+@model Face.Mvc.Models.Face.FaceVerifyViewModel
+@{
+    ViewData["Title"] = "Face Verify";
+}
+
+<h2>Face Verify - Face to Face</h2>
+<p style="font-style: italic">
+    Face API verification performs an authentication against two detected faces.
+</p>
+<p style="font-style: italic">
+    Remarks:
+    <ul style="font-style: italic">
+        <li>This API works well for frontal and near-frontal faces.</li>
+        <li>Please upload exactly <b>TWO</b> image.</li>
+        <li>Every image must contain only <b>ONE</b> face.</li>
+    </ul>
+</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-12">
+        <form class="form-horizontal" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-md-10 form-group">
+                    <input type="file" id="files" name="files" multiple onchange="readURL(this);" />
+                    <br />
+                    <img id="image1" src="#" style="display: none; max-width:300px;max-height:300px" />
+                    <img id="image2" src="#" style="display: none; max-width:300px;max-height:300px" />
+                </div>
+                <div class="col-md-10 form-group">
+                    <input type="button" id="upload" class="btn btn-primary" value="Verify Now" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<br />
+
+<div class="row" id="result-data" style="display: none">
+    <h2>Verify Result</h2>
+    <div class="col-md-12">
+        <div class="row">
+            <div class="form-group ">
+                <label>The two faces <label id="isIdentical">not</label> belong to the same person. Confidence is <label id="confidence"></label></label>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function readURL(input) {
+            if (!input.files || input.files.length != 2) {
+                alert("Please upload exactly 2 images!");
+            } else {
+                $('#image1,#image2').show();
+                $.each(input.files, function (index, file) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#image' + (index + 1)).attr('src', e.target.result);
+                    };
+                    reader.readAsDataURL(input.files[index]);
+                });
+            }
+        }
+
+        function bindHtml(data) {
+            if (data.isIdentical)
+                $("#isIdentical").hide();
+            $("#confidence").text(data.confidence);
+            $("#result-data").show();
+        }
+
+        $("#upload").click(function (evt) {
+            var files = $("#files")[0].files;
+            if (files.length != 2)
+                alert("Must upload exactly 2 images");
+            else {
+                var formData = new FormData();
+                $.each(files, function (index, file) {
+                    formData.append(file.name, file);
+                });
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Face/VerifyFaceToFace",
+                    contentType: false,
+                    processData: false,
+                    data: formData,
+                    success: function (response) {
+                        if (response.success) {
+                            bindHtml(response.data);
+                        } else {
+                            alert(response.error);
+                        }
+                    },
+                    error: function () {
+                        alert(response.error);
+                    }
+                });
+            }
+        });
+
+    </script>
+}

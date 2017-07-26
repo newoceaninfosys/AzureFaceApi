@@ -1,0 +1,225 @@
+﻿@model Face.Mvc.Models.Group.GroupListViewModel
+@{
+    ViewData["Title"] = "Person Groups";
+}
+
+<h2>All groups</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <form class="form-horizontal">
+            <div class="form-group">
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-default" onclick="showAddModel();">Add New</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="table table-bordered" id="result-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>UserData</th>
+            <th>Training Status</th>
+            <th>Persons</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var group in Model.Groups)
+        {
+            <tr id="@group.Id">
+                <td><b>@group.Name</b><br>@group.Id</td>
+                <td>@group.UserData</td>
+                <td>@group.Status <br> @group.StatusMessage</td>
+                <td><a href="@Url.Action("List","Person", new {groupId = group.Id})">View</a></td>
+                <td>
+                    <button type="button" class="btn btn-default" onclick="trainGroup('@group.Id')">Train</button>
+                    <button type="button" class="btn btn-info" onclick="showEditModel('@group.Id', '@group.Name', '@group.UserData');">Edit</button>
+                    <button type="button" class="btn btn-danger" onclick="showDeleteModel('@group.Id', '@group.Name');">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div id="modal-container-add" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Add new Group</h2>
+            </div>
+            <form asp-controller="Group" asp-action="Add" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="Name" class="control-label">Name</label>
+                        <input type="text" class="form-control" name="Name" id="Name" required="required" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UserData" class="control-label">UserData</label>
+                        <textarea class="form-control" name="UserData" id="UserData"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container-edit" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Edit Group</h2>
+            </div>
+            <form asp-controller="Group" asp-action="Edit" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="Id" />
+                    <div class="form-group">
+                        <label for="Name" class="control-label">Name</label>
+                        <input type="text" class="form-control" name="Name" id="Name" required="required" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UserData" class="control-label">UserData</label>
+                        <textarea class="form-control" name="UserData" id="UserData"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container-delete" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Confirm Delete</h2>
+            </div>
+            <form asp-controller="Group" asp-action="Delete" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="Id" />
+                    <input type="hidden" name="Group.Id" id="Group.Id" groupId />
+                    <h2>Are you sure want to delete <b id="Name"></b>?</h2>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        //call trainning group
+        function trainGroup(groupid) {
+            $.ajax({
+                type: "POST",
+                url: 'Group/TrainGroup',
+                data: { groupId: groupid },
+                success: function (data) {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error)
+                    }
+                },
+                error: function (jqxhr) {
+                    alert(jqxhr.responseText);
+                }
+            });
+        }
+
+        //show modal add group
+        function showAddModel() {
+            $('#modal-container-add').modal('show');
+        }
+
+        //show model edit group
+        function showEditModel(id, name, userData) {
+            $("#modal-container-edit #Id").val(id);
+            $("#modal-container-edit #Name").val(name);
+            $("#modal-container-edit #UserData").val(userData);
+            $('#modal-container-edit').modal('show');
+        }
+
+        //show model confirm delete
+        function showDeleteModel(id, name) {
+            $("#modal-container-delete #Id").val(id);
+            $("#modal-container-delete #Name").html(name);
+            $('#modal-container-delete').modal('show');
+        }
+
+        //submit action
+        $('#modal-container-add form, #modal-container-edit form, #modal-container-delete form').submit(function () {
+            var self = $(this);
+            $.post($(this).attr('action'),
+                $(this).serialize(),
+                function (response) {
+                    if (response.success) {
+                        self.parents('.modal').modal('hide');
+                        if (self.parents('.modal').attr('id') === 'modal-container-delete') {
+                            removeGroupFromTable($("#modal-container-delete #Id").val());
+                        } else if (self.parents('.modal').attr('id') === 'modal-container-add') {
+                            addGroupToTable(response.data);
+                        } else if (self.parents('.modal').attr('id') === 'modal-container-edit') {
+                            updateGroupInTable(response.data);
+                        }
+                    } else {
+                        alert(response.error);
+                    }
+                },
+                'json');
+            return false;
+        });
+
+        function addGroupToTable(group) {
+            $("#result-table").prepend(renderRow(group));
+        }
+
+        function updateGroupInTable(group) {
+            $("tr#" + group.id).html(renderColumns(group));
+        }
+
+        function removeGroupFromTable(id) {
+            $("tr#" + id).remove();
+        }
+
+        function renderRow(group) {
+            return "<tr id='" + group.id + "'>" + renderColumns(group) + "</tr>";
+        }
+
+        function renderColumns(group) {
+            return "<td><b>" + group.name + "</b><br />" + group.id + "</td>" +
+                "<td>" + group.userData + "</td>" +
+                "<td>Not trained</td>" +
+                "<td><a href='@Url.Action("List","Person")?groupId=" + group.id + "'>View</a></td>" +
+                "<td>" +
+                "<button type='button' class='btn btn-default' onclick='trainGroup(\"" + group.id + "\")'> Train</button > " +
+                "\n<button type='button' class='btn btn-info' onclick='showEditModel(\"" + group.id + "\", \"" + group.name + "\", \"" + group.userData + "\")'>Edit</button>" +
+                "\n<button type='button' class='btn btn-danger' onclick='showDeleteModel(\"" + group.id + "\", \"" + group.name + "\")'> Delete</button >" +
+                "</td>";
+        }
+
+    </script>
+}

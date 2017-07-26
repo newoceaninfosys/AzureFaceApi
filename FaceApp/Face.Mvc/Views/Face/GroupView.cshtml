@@ -1,0 +1,124 @@
+@model Face.Mvc.Models.Face.FaceGroupViewModel
+@{
+    ViewData["Title"] = "Face Groups";
+}
+
+<h2>Face Group</h2>
+<p style="font-style: italic">
+    Given one set of unknown faces, face grouping API automatically divides them into several groups based on similarity. Each group is a disjointed proper subset of the original unknown face set, and contains similar faces. And all the faces in the same group can be considered to belong to the same person object. Refer to Face - Group for more details.
+</p>
+<p style="font-style: italic">
+    Divide candidate faces into groups based on face similarity.
+    <ul style="font-style: italic">
+        <li>The output is one or more disjointed face groups and a messyGroup. A face group contains faces that have similar looking, often of the same person. Face groups are ranked by group size, i.e. number of faces. Notice that faces belonging to a same person might be split into several groups in the result.</li>
+        <li>MessyGroup is a special face group containing faces that cannot find any similar counterpart face from original faces. The messyGroup will not appear in the result if all faces found their counterparts.</li>
+        <li>Group API needs at least 2 candidate faces and 1000 at most.</li>
+    </ul>
+</p>
+<hr />
+
+<div class="row">
+    <div class="col-md-12">
+        <form class="form-horizontal" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <div class="col-md-10 form-group">
+                    <input type="file" id="files"
+                           name="files" multiple />
+                </div>
+                <div class="col-md-10 form-group">
+                    <input type="button" id="upload" class="btn btn-primary" value="Group Now" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<br />
+
+<div class="row" id="result">
+</div>
+
+@section Scripts
+{
+    <script>
+        $(document).ready(function () {
+            function cleanHtml() {
+                $("#result").empty();
+            }
+
+            function bindHtml(data) {
+                var html = "";
+                if (data.length > 1) {
+                    html += "<h2>List Group</h2>" +
+                        "<table class='table table-bordered'>" +
+                        "<thead><tr><th>Num of Faces Similar</th><th>Images</th></tr></thead>" +
+                        "<tbody>";
+                    $.each(data, function (index, item) {
+                        if (index < data.length - 1)
+                            html += "<tr>" + renderColumns(item, index) + "</tr>";
+                    });
+                    html += "</tbody></table><br/>";
+                }
+
+                html += "<h2>Messy Group</h2>" +
+                    "<table class='table table-bordered'>" +
+                    "<thead><tr><th>Num of Faces</th><th>Images</th></tr></thead>" +
+                    "<tbody>";
+                html += "<tr>" + renderColumns(data[data.length - 1], data.length - 1) + "</tr></tbody></table>";
+                $("#result").prepend(html);
+            }
+
+            function bindImageOnGroup(selectorInput, data, maxWidth) {
+                var renderImages = [];
+                $.each(data, function (index, group) {
+                    $.each(group, function (idx, item) {
+                        item.selector = "img." + item.imageName + index + idx;
+                        renderImages.push(item);
+                    });
+                });
+                bindImage(selectorInput, renderImages, maxWidth);
+            }
+
+            function renderColumns(group, index) {
+                var content = "<td>" + group.length + "</td><td>";
+                $.each(group, function (idx, item) {
+                    content += drawImage(300, item.imageName + index + idx);
+                });
+                content += "</td>";
+                return content;
+            }
+
+            $("#upload").click(function (evt) {
+                var files = $("#files")[0].files;
+                if (files.length < 3)
+                    alert("Must upload at least 3 images");
+                else {
+                    var formData = new FormData();
+                    $.each(files, function (index, file) {
+                        formData.append(file.name, file);
+                    });
+
+                    $.ajax({
+                        type: "POST",
+                        url: "/Face/Group",
+                        contentType: false,
+                        processData: false,
+                        data: formData,
+                        success: function (response) {
+                            cleanHtml();
+                            if (response.success) {
+                                bindHtml(response.data);
+                                bindImageOnGroup("#files", response.data, 300);
+                            } else {
+                                alert(response.error);
+                            }
+                        },
+                        error: function () {
+                            alert(response.error);
+                        }
+                    });
+                }
+            });
+        });
+
+    </script>
+}

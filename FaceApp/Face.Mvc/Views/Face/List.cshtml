@@ -1,0 +1,275 @@
+﻿@model Face.Mvc.Models.Face.FaceListViewModel
+@{
+    ViewData["Title"] = "Person Faces";
+}
+
+<br />
+<div class="row">
+    <div class="col-md-12">
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>Group Id</label>
+            </div>
+            <div class="col-md-10">
+                <label id="groupId">: @Model.PersonGroupId</label>
+            </div>
+        </div>
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>Person Id</label>
+            </div>
+            <div class="col-md-10">
+                <label id="personId">: @Model.PersonId</label>
+            </div>
+        </div>
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>Person Name</label>
+            </div>
+            <div class="col-md-10">
+                <label>: @Model.Name</label>
+            </div>
+        </div>
+        <div class="form-group ">
+            <div class="col-md-2">
+                <label>User data</label>
+            </div>
+            <div class="col-md-10">
+                <label>: @Model.UserData</label>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<br />
+<h2>All faces of person</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <form class="form-horizontal">
+            <div class="form-group ">
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-default" onclick="showAddModel();">Add New</button>
+                </div>
+                <div class="col-md-10">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="table table-bordered" id="result-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Face</th>
+            <th>UserData</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var face in Model.FaceUrls)
+        {
+            <tr id="@face.Id">
+                <td>@face.Id</td>
+                <td>
+                    <img style="max-height: 200px; max-width: 400px;" src="@face.Url" />
+                </td>
+                <td>@face.UserData</td>
+                <td>
+                    <button type="button" class="btn btn-info" onclick="showEditModel('@Model.PersonGroupId', '@Model.PersonId', '@face.Id', '@face.UserData');">Edit</button>
+                    <button type="button" class="btn btn-danger" onclick="showDeleteModel('@Model.PersonGroupId', '@Model.PersonId', '@face.Id');">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div id="modal-container-add" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Add new Face</h2>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="UserDataAdd" class="control-label">User Data</label>
+                        <textarea class="form-control" name="UserDataAdd" id="userDataAdd"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="TargetFaceAdd" class="control-label">Target Face</label>
+                        <textarea class="form-control" name="TargetFaceAdd" id="targetFaceAdd"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-md-10">
+                            <p>Upload one file:</p>
+                            <input type="file" id="files"
+                                   name="files" multiple />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-dismiss="modal">Close</button>
+                    <input type="button" id="upload" class="btn btn-primary" value="Add" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container-edit" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Edit Face</h2>
+            </div>
+            <form asp-controller="Face" asp-action="Edit" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="Id" />
+                    <input type="hidden" name="PersonGroupId" personGroupId />
+                    <input type="hidden" name="PersonId" personId />
+                    <div class="form-group">
+                        <label for="UserData" class="control-label">User Data</label>
+                        <textarea class="form-control" name="UserData" id="UserData"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container-delete" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Confirm Delete</h2>
+            </div>
+            <form asp-controller="Face" asp-action="Delete" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="Id" />
+                    <input type="hidden" name="PersonGroupId" id="PersonGroupId" personGroupId />
+                    <input type="hidden" name="PersonId" id="PersonId" personId />
+
+                    <h2>Are you sure want to delete?</h2>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function showAddModel() {
+            $('#modal-container-add').modal('show');
+        }
+
+        function showEditModel(groupId, personId, id, userData) {
+            $("#modal-container-edit [personGroupId]").val(groupId);
+            $("#modal-container-edit [personId]").val(personId);
+            $("#modal-container-edit #Id").val(id);
+            $("#modal-container-edit #UserData").val(userData);
+            $('#modal-container-edit').modal('show');
+        }
+
+        function showDeleteModel(groupId, personId, faceId) {
+            $("#modal-container-delete [personGroupId]").val(groupId);
+            $("#modal-container-delete [personId]").val(personId);
+            $("#modal-container-delete #Id").val(faceId);
+            $('#modal-container-delete').modal('show');
+        }
+
+        function removeFaceFromTable(id) {
+            $("tr#" + id).remove();
+        }
+
+        function addFaceToTable(face) {
+            $("#result-table").prepend(renderRow(face));
+        }
+
+        function updateFaceInTable(face) {
+            $("tr#" + face.id).html(renderColumns(face));
+        }
+
+        function renderRow(face) {
+            return "<tr id='" + face.id + "'>" + renderColumns(face) + "</tr>";
+        }
+
+        function renderColumns(face) {
+            return "<td>" + face.id + "</td>" +
+                "<td><img style='max-height: 200px; max-width: 400px;' src='" + face.url + "' /></td>" +
+                "<td>" + face.userData + "</td>" +
+                "<td><button type='button' class='btn btn-info' onclick='showEditModel(\"" + '@Model.PersonGroupId' + "\", \"" + '@Model.PersonId' + "\", \"" + face.id + "\", \"" + face.userData + "\")'>Edit</button>" +
+                "\n<button type='button' class='btn btn-danger' onclick='showDeleteModel(\"" + '@Model.PersonGroupId' + "\", \"" + '@Model.PersonId' + "\", \"" + face.id + "\")'> Delete</button >" +
+                "</td>";
+        }
+
+        $('#modal-container-edit form, #modal-container-delete form').submit(function () {
+            var self = $(this);
+            $.post($(this).attr('action'),
+                $(this).serialize(),
+                function (response) {
+                    if (response.success) {
+                        self.parents('.modal').modal('hide');
+                        if (self.parents('.modal').attr('id') === 'modal-container-delete') {
+                            removeFaceFromTable($("#modal-container-delete #Id").val());
+                        } else if (self.parents('.modal').attr('id') === 'modal-container-edit') {
+                            updateFaceInTable(response.data);
+                        }
+                    } else {
+                        alert(response.error);
+                    }
+                },
+                'json');
+            return false;
+        });
+
+
+        $("#upload").click(function (evt) {
+            var formData = new FormData();
+            formData.append('image', $("#files")[0].files[0]);
+            formData.append('personGroupId', '@Model.PersonGroupId');
+            formData.append('personId', '@Model.PersonId');
+            formData.append('userData', $("#userDataAdd").val());
+            formData.append('targetFace', $("#targetFace").val() || '');
+
+            $.ajax({
+                type: "POST",
+                url: "/Face/Add",
+                contentType: false,
+                processData: false,
+                data: formData,
+                success: function (response) {
+                    $('#modal-container-add').modal('hide');
+                    if (!response.success)
+                        alert(response.error);
+                    else
+                        addFaceToTable(response.data);
+                },
+                error: function () {
+                    $('#modal-container-add').modal('hide');
+                    alert(response.error);
+                }
+            });
+        });
+    </script>
+}

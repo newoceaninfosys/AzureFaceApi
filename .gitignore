@@ -1,0 +1,15 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/FaceApp/.vs
+/FaceApp/Face.Core/bin/Debug/netcoreapp1.1
+/FaceApp/Face.Web/obj
+/FaceApp/Face.Core/obj
+/FaceApp/Face.Service/bin/Debug/netcoreapp1.1
+/FaceApp/Face.Service/obj
+/FaceApp/Face.Web/bin/Debug/netcoreapp1.1
+/FaceApp/Face.Mvc/bin
+/FaceApp/Face.Mvc/obj
+/FaceApp/Face.Core/bin/Release/netcoreapp1.1
+/FaceApp/Face.Service/bin/Release/netcoreapp1.1

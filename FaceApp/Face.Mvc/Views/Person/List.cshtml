@@ -1,0 +1,234 @@
+﻿@model Face.Mvc.Models.Person.PersonListViewModel
+@{
+    ViewData["Title"] = "List";
+}
+
+<h2>All persons</h2>
+
+<div class="row">
+    <div class="col-md-12">
+        <form asp-controller="Person" asp-action="List" method="get" class="form-horizontal">
+            <div class="form-group">
+                <label asp-for="GroupId" class="col-md-2 control-label"></label>
+                <div class="col-md-10">
+                    <select asp-for="GroupId" class="form-control" asp-items="@(new SelectList(Model.Groups,"Id","Name"))">
+                        <option value="">--- All ---</option>
+                    </select>
+                    <span asp-validation-for="GroupId" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-md-2">
+                    @if (Model.Groups.Any())
+                    {
+                        <button type="button" class="btn btn-default" onclick="showAddModel();">Add New</button>
+                    }
+                </div>
+                <div class="col-md-10">
+                    <button type="submit" class="btn btn-default">Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<table class="table table-bordered" id="result-table">
+    <thead>
+        <tr>
+            <th>Name<br />ID</th>
+            <th>Total Faces</th>
+            <th>UserData</th>
+            <th>Group</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var person in Model.Persons)
+        {
+            <tr id="@person.Id">
+                <td><b>@person.Name</b><br />@person.Id</td>
+                <td>
+                    @person.PersistedFaceIds.Count
+                    <a href="@Url.Action("List", "Face", new { groupId = @person.Group.Id, personId = @person.Id })">View</a>
+                </td>
+                <td>@person.UserData</td>
+                <td>@person.Group.Name</td>
+                <td>
+                    <button type="button" class="btn btn-default" onclick="location.href='@Url.Action("VerifyPersonView", "Face", new { groupId = @person.Group.Id, personId = @person.Id })'">Verify</button>
+                    @*<button type="button" class="btn btn-default" onclick="location.href='@Url.Action("List", "Face", new { groupId = @person.Group.Id, personId = @person.Id })'">Faces</button>*@
+                    <button type="button" class="btn btn-info" onclick="showEditModel('@person.Group.Id', '@person.Id', '@person.Name', '@person.UserData');">Edit</button>
+                    <button type="button" class="btn btn-danger" onclick="showDeleteModel('@person.Group.Id', '@person.Id', '@person.Name');">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div id="modal-container-add" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Add new Person</h2>
+            </div>
+            <form asp-controller="Person" asp-action="Add" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="Group.Id" class="control-label">Group</label>
+                        <select name="Group.Id" id="Group.Id" groupId class="form-control" required="required">
+                            @foreach (var group in Model.Groups)
+                            {
+                                <option value="@group.Id">@group.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="Name" class="control-label">Name</label>
+                        <input type="text" class="form-control" name="Name" id="Name" required="required" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UserData" class="control-label">UserData</label>
+                        <textarea class="form-control" name="UserData" id="UserData"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container-edit" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Edit Person</h2>
+            </div>
+            <form asp-controller="Person" asp-action="Edit" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="Id" />
+                    <input type="hidden" name="Group.Id" id="Group.Id" groupId />
+                    <div class="form-group">
+                        <label for="Name" class="control-label">Name</label>
+                        <input type="text" class="form-control" name="Name" id="Name" required="required" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UserData" class="control-label">UserData</label>
+                        <textarea class="form-control" name="UserData" id="UserData"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container-delete" class="modal fade hidden-print" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h2 class="modal-title">Confirm Delete</h2>
+            </div>
+            <form asp-controller="Person" asp-action="Delete" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="Id" id="Id" />
+                    <input type="hidden" name="Group.Id" id="Group.Id" groupId />
+                    <h2>Are you sure want to delete <b id="Name"></b>?</h2>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <script>
+        function showAddModel() {
+            var selectGroupId = $("#GroupId").val();
+            $("#modal-container-add [groupId]").val(selectGroupId);
+            $('#modal-container-add').modal('show');
+        }
+
+        function showEditModel(groupId, id, name, userData) {
+            $("#modal-container-edit [groupId]").val(groupId);
+            $("#modal-container-edit #Id").val(id);
+            $("#modal-container-edit #Name").val(name);
+            $("#modal-container-edit #UserData").val(userData);
+            $('#modal-container-edit').modal('show');
+        }
+
+        function showDeleteModel(groupId, id, name) {
+            $("#modal-container-delete [groupId]").val(groupId);
+            $("#modal-container-delete #Id").val(id);
+            $("#modal-container-delete #Name").html(name);
+            $('#modal-container-delete').modal('show');
+        }
+
+        function removePersonFromTable(id) {
+            $("tr#" + id).remove();
+        }
+
+        function addPersonToTable(person) {
+            $("#result-table").prepend(renderRow(person));
+        }
+
+        function updatePersonInTable(person) {
+            $("tr#" + person.id).html(renderColumns(person));
+        }
+
+        function renderRow(person) {
+            return "<tr id='" + person.id + "'>" + renderColumns(person) + "</tr>";
+        }
+
+        function renderColumns(person) {
+            return "<td><b>" + person.name + "</b><br />" + person.id + "</td>" +
+                "<td>0 <a href=\"/Face/List?groupId=" + person.group.id + "&personId=" + person.id + "\">View</a></td>" +
+                "<td>" + person.userData + "</td>" +
+                "<td>" + person.group.name + "</td>" +
+                "<td>" +
+                "<button type='button' class='btn btn-default' onclick='location.href=\"/Face/VerifyPersonView?groupId=" + person.group.id + "&personId=" + person.id + "\"'>Verify</button>" +
+                "\n<button type='button' class='btn btn-info' onclick='showEditModel(\"" + person.group.id + "\", \"" + person.id + "\", \"" + person.name + "\", \"" + person.userData + "\")'>Edit</button>" +
+                "\n<button type='button' class='btn btn-danger' onclick='showDeleteModel(\"" + person.group.id + "\", \"" + person.id + "\", \"" + person.name + "\")'> Delete</button >" +
+                "</td>";
+        }
+
+        $('#modal-container-add form, #modal-container-edit form, #modal-container-delete form').submit(function () {
+            var self = $(this);
+            $.post($(this).attr('action'),
+                $(this).serialize(),
+                function (response) {
+                    if (response.success) {
+                        self.parents('.modal').modal('hide');
+                        if (self.parents('.modal').attr('id') === 'modal-container-delete') {
+                            removePersonFromTable($("#modal-container-delete #Id").val());
+                        } else if (self.parents('.modal').attr('id') === 'modal-container-add') {
+                            addPersonToTable(response.data);
+                        } else if (self.parents('.modal').attr('id') === 'modal-container-edit') {
+                            updatePersonInTable(response.data);
+                        }
+                    } else {
+                        alert(response.error);
+                    }
+                },
+                'json');
+            return false;
+        });
+    </script>
+}
